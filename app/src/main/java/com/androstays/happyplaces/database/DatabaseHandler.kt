@@ -22,6 +22,7 @@ class DatabaseHandler(context: Context) :
         private const val KEY_IMAGE = "image"
         private const val KEY_DESCRIPTION = "description"
         private const val KEY_DATE = "date"
+        private const val KEY_LOCATION = "location"
         private const val KEY_LATITUDE = "latitude"
         private const val KEY_LONGITUDE = "longitude"
     }
@@ -33,6 +34,7 @@ class DatabaseHandler(context: Context) :
                 + KEY_IMAGE + " TEXT, "
                 + KEY_DESCRIPTION + " TEXT, "
                 + KEY_DATE + " TEXT, "
+                + KEY_LOCATION + " TEXT, "
                 + KEY_LATITUDE + " TEXT, "
                 + KEY_LONGITUDE + " TEXT)")
 
@@ -46,12 +48,13 @@ class DatabaseHandler(context: Context) :
 
     fun addHappyPlace(happyPlace: HappyPlacesModel): Long {
         val db = this.writableDatabase
-        val contentValues = ContentValues();
+        val contentValues = ContentValues()
 
         contentValues.put(KEY_TITLE, happyPlace.title)
         contentValues.put(KEY_IMAGE, happyPlace.image)
         contentValues.put(KEY_DESCRIPTION, happyPlace.description)
         contentValues.put(KEY_DATE, happyPlace.date)
+        contentValues.put(KEY_LOCATION, happyPlace.location)
         contentValues.put(KEY_LATITUDE, happyPlace.latitude)
         contentValues.put(KEY_LONGITUDE, happyPlace.longitude)
 
@@ -75,6 +78,7 @@ class DatabaseHandler(context: Context) :
                     cursor.getString(cursor.getColumnIndex(KEY_IMAGE)),
                     cursor.getString(cursor.getColumnIndex(KEY_DESCRIPTION)),
                     cursor.getString(cursor.getColumnIndex(KEY_DATE)),
+                    cursor.getString(cursor.getColumnIndex(KEY_LOCATION)),
                     cursor.getDouble(cursor.getColumnIndex(KEY_LATITUDE)),
                     cursor.getDouble(cursor.getColumnIndex(KEY_LONGITUDE))
                         )

@@ -155,12 +155,12 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
                     }
 
                     else -> {
-                        print("entered into this")
                         val happyPlacesModel = HappyPlacesModel(
                             0, binding?.title?.text.toString(),
                             saveImageToInternalStorage.toString(),
                             binding?.description?.text.toString(),
                             binding?.etDate?.text.toString(),
+                            binding?.location?.text.toString(),
                             mLatitude,
                             mLongitude
                         )
