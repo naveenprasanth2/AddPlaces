@@ -11,12 +11,15 @@ open class HappyPlacesAdapter(
     private val list: ArrayList<HappyPlacesModel>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    private var onClickListener: OnClickListener? = null
+
     inner class MyViewHolder(binding: ItemHappyPlaceBinding) :
         RecyclerView.ViewHolder(binding.root) {
         val tvTitle = binding.tvTitle
         val tvDescription = binding.tvDescription
         val ivPlaceImage = binding.ivPlaceImage
     }
+
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return MyViewHolder(
@@ -32,10 +35,24 @@ open class HappyPlacesAdapter(
             holder.ivPlaceImage.setImageURI(Uri.parse(model.image))
             holder.tvTitle.text = model.title
             holder.tvDescription.text = model.description
+            holder.itemView.setOnClickListener {
+                onClickListener?.onClick(position, model)
+            }
         }
     }
 
     override fun getItemCount(): Int {
         return list.size
+    }
+
+    interface OnClickListener {
+        fun onClick(position: Int, model: HappyPlacesModel) {
+
+        }
+    }
+
+    fun setOnClickListener(onClickListener: OnClickListener) {
+        this.onClickListener = onClickListener
+
     }
 }
