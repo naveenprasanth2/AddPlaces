@@ -1,6 +1,5 @@
 package com.androstays.happyplaces.adapters
 
-import android.content.Context
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,7 +8,6 @@ import com.androstays.happyplaces.databinding.ItemHappyPlaceBinding
 import com.androstays.happyplaces.model.HappyPlacesModel
 
 open class HappyPlacesAdapter(
-    private val context: Context,
     private val list: ArrayList<HappyPlacesModel>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
