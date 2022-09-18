@@ -1,12 +1,15 @@
-package com.androstays.happyplaces
+package com.androstays.happyplaces.activities
 
 import com.androstays.happyplaces.databinding.ActivityAddHappyPlacesBinding
 import android.Manifest
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -17,12 +20,18 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.androstays.happyplaces.R
+import com.androstays.happyplaces.database.DatabaseHandler
+import com.androstays.happyplaces.model.HappyPlacesModel
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,10 +42,13 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
 
     private var cal = Calendar.getInstance()
     private lateinit var dateSetListener: DatePickerDialog.OnDateSetListener
+    private var saveImageToInternalStorage: Uri? = null
+    private var mLatitude: Double = 0.0
+    private var mLongitude: Double = 0.0
+
 
     companion object {
-        private const val CAMERA_PERMISSION_CODE = 1
-        private const val CAMERA_REQUEST_CODE = 2
+        private const val IMAGE_DIRECTORY = "HappyPlacesImages"
     }
 
 
@@ -51,7 +63,7 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
 
 
         setSupportActionBar(binding?.toolbarAddPlace)
-        if (supportActionBar != null) {
+        supportActionBar?.let {
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             supportActionBar?.title = "Add Happy Place"
         }
@@ -65,10 +77,11 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
             cal.set(Calendar.DAY_OF_MONTH, dayOfMonth)
             upDateDateInView()
         }
-
+        upDateDateInView()
         // Setting OnClickListeners
         binding?.etDate?.setOnClickListener(this)
         binding?.tvAddImage?.setOnClickListener(this)
+        binding?.btnSave?.setOnClickListener(this)
 
 
         // Register Activity Result Launcher
@@ -105,6 +118,73 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
                     }
                 }
                 pictureDialog.show()
+            }
+
+            R.id.btnSave -> {
+                when {
+                    binding?.title?.text.isNullOrEmpty() -> {
+                        Toast.makeText(
+                            this@AddHappyPlacesActivity,
+                            "Enter the title",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    binding?.description?.text.isNullOrEmpty() -> {
+                        Toast.makeText(
+                            this@AddHappyPlacesActivity,
+                            "Enter the description",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    binding?.location?.text.isNullOrEmpty() -> {
+                        Toast.makeText(
+                            this@AddHappyPlacesActivity,
+                            "Enter the location",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    saveImageToInternalStorage == null -> {
+                        Toast.makeText(
+                            this@AddHappyPlacesActivity,
+                            "Select the Image",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    else -> {
+                        print("entered into this")
+                        val happyPlacesModel = HappyPlacesModel(
+                            0, binding?.title?.text.toString(),
+                            saveImageToInternalStorage.toString(),
+                            binding?.description?.text.toString(),
+                            binding?.etDate?.text.toString(),
+                            mLatitude,
+                            mLongitude
+                        )
+                        val dbHandler = DatabaseHandler(this)
+                        val addHappyPlace = dbHandler.addHappyPlace(happyPlacesModel)
+                        if (addHappyPlace > 0) {
+                            Toast.makeText(
+                                this,
+                                "Happy places details has been added successfully",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                this,
+                                "Happy places details has been not added",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        finish()
+                        intent = Intent(this, MainActivity::class.java)
+                        startActivity(intent)
+                    }
+                }
+
             }
         }
     }
@@ -189,6 +269,14 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
                     if (data != null) {
                         val contentUri = data.data
                         try {
+                            saveImageToInternalStorage = saveImageToInternalStorage(
+                                BitmapFactory.decodeStream(
+                                    contentResolver.openInputStream(
+                                        contentUri!!
+                                    )
+                                )
+                            )
+                            print("error path is $saveImageToInternalStorage")
                             binding?.ivPlaceImage?.setImageURI(contentUri)
                         } catch (e: IOException) {
                             e.printStackTrace()
@@ -215,6 +303,8 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
                     if (data != null) {
                         try {
                             val thumbNail: Bitmap = result!!.data!!.extras?.get("data") as Bitmap
+                            saveImageToInternalStorage = saveImageToInternalStorage(thumbNail)
+                            print("error path is $saveImageToInternalStorage")
                             binding?.ivPlaceImage?.setImageBitmap(thumbNail)
                         } catch (e: IOException) {
                             e.printStackTrace()
@@ -233,8 +323,24 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
 
 
     private fun upDateDateInView() {
-        val myFormat = "dd.MM.yyyy"
+        val myFormat = "dd/MM/yyyy"
         val sdf = SimpleDateFormat(myFormat, Locale.getDefault())
         binding?.etDate?.setText(sdf.format(cal.time).toString())
+    }
+
+    private fun saveImageToInternalStorage(bitmap: Bitmap): Uri {
+        val wrapper = ContextWrapper(applicationContext)
+        var file = wrapper.getDir(IMAGE_DIRECTORY, Context.MODE_PRIVATE)
+        file = File(file, "${UUID.randomUUID()}.jpg")
+        try {
+            val stream: OutputStream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            stream.flush()
+            stream.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+        return Uri.parse(file.absolutePath)
     }
 }
