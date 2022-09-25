@@ -11,6 +11,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
@@ -45,7 +46,7 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
     private var saveImageToInternalStorage: Uri? = null
     private var mLatitude: Double = 0.0
     private var mLongitude: Double = 0.0
-
+    private var mHappyPLaceDetails: HappyPlacesModel? = null
 
     companion object {
         private const val IMAGE_DIRECTORY = "HappyPlacesImages"
@@ -88,6 +89,32 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
         registerOnActivityForGalleryResult()
         registerOnActivityForCameraResult()
 
+
+        if (intent.hasExtra(MainActivity.EXTRA_PLACE_DETAILS)) {
+            mHappyPLaceDetails = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(
+                    MainActivity.EXTRA_PLACE_DETAILS,
+                    HappyPlacesModel::class.java
+                )
+            } else {
+                intent.getParcelableExtra(MainActivity.EXTRA_PLACE_DETAILS)
+            }
+        }
+
+
+        mHappyPLaceDetails?.let {
+            supportActionBar!!.title = "Edit Happy Places"
+            binding?.title?.setText(mHappyPLaceDetails?.title)
+            binding?.description?.setText(mHappyPLaceDetails?.description)
+            binding?.etDate?.setText(mHappyPLaceDetails?.date)
+            binding?.location?.setText(mHappyPLaceDetails?.location)
+            mLatitude = mHappyPLaceDetails!!.latitude
+            mLongitude = mHappyPLaceDetails!!.longitude
+
+            saveImageToInternalStorage = Uri.parse(mHappyPLaceDetails!!.image)
+            binding?.ivPlaceImage?.setImageURI(saveImageToInternalStorage)
+            binding?.btnSave?.text = "UPDATE"
+        }
     }
 
     override fun onDestroy() {
@@ -156,7 +183,8 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
 
                     else -> {
                         val happyPlacesModel = HappyPlacesModel(
-                            0, binding?.title?.text.toString(),
+                            if (mHappyPLaceDetails == null) 0 else mHappyPLaceDetails!!.id,
+                            binding?.title?.text.toString(),
                             saveImageToInternalStorage.toString(),
                             binding?.description?.text.toString(),
                             binding?.etDate?.text.toString(),
@@ -165,21 +193,39 @@ class AddHappyPlacesActivity : AppCompatActivity(), View.OnClickListener {
                             mLongitude
                         )
                         val dbHandler = DatabaseHandler(this)
-                        val addHappyPlace = dbHandler.addHappyPlace(happyPlacesModel)
-                        if (addHappyPlace > 0) {
-                            Toast.makeText(
-                                this,
-                                "Happy places details has been added successfully",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        if (mHappyPLaceDetails == null) {
+                            val addHappyPlace = dbHandler.addHappyPlace(happyPlacesModel)
+                            if (addHappyPlace > 0) {
+                                Toast.makeText(
+                                    this,
+                                    "Happy places details has been added successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    this,
+                                    "Happy places details has been not added",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            finish()
                         } else {
-                            Toast.makeText(
-                                this,
-                                "Happy places details has been not added",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            val updateHappyPlace = dbHandler.updateHappyPlace(happyPlacesModel)
+                            if (updateHappyPlace > 0) {
+                                Toast.makeText(
+                                    this,
+                                    "Happy places details has been updated successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    this,
+                                    "Happy places details has been not updated",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            finish()
                         }
-                        finish()
                         intent = Intent(this, MainActivity::class.java)
                         startActivity(intent)
                     }
