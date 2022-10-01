@@ -11,6 +11,7 @@ import com.androstays.happyplaces.adapters.HappyPlacesAdapter
 import com.androstays.happyplaces.database.DatabaseHandler
 import com.androstays.happyplaces.databinding.ActivityMainBinding
 import com.androstays.happyplaces.model.HappyPlacesModel
+import com.androstays.happyplaces.utils.SwipeToDeleteCallback
 import com.androstays.happyplaces.utils.SwipeToEditCallback
 
 class MainActivity: AppCompatActivity() {
@@ -62,8 +63,25 @@ class MainActivity: AppCompatActivity() {
                 // END
             }
         }
+
         val editItemTouchHelper = ItemTouchHelper(editSwipeHandler)
         editItemTouchHelper.attachToRecyclerView(binding?.rvHappyPlacesList)
+
+
+        // TODO(Step 4: Bind the delete feature class to recyclerview)
+        // START
+        val deleteSwipeHandler = object : SwipeToDeleteCallback(this) {
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                // TODO (Step 5: Call the adapter function when it is swiped)
+                // START
+                val adapter = binding?.rvHappyPlacesList?.adapter as HappyPlacesAdapter
+                adapter.removeAt(viewHolder.adapterPosition)
+                getHappyPLacesListFromLocalDB()
+                // END
+            }
+        }
+        val deleteItemTouchHelper = ItemTouchHelper(deleteSwipeHandler)
+        deleteItemTouchHelper.attachToRecyclerView(binding?.rvHappyPlacesList)
     }
 
     //shows empty msg if no data is present, else it will show recycler view

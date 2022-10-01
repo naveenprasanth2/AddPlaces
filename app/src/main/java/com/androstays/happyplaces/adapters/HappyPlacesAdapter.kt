@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.androstays.happyplaces.activities.AddHappyPlacesActivity
 import com.androstays.happyplaces.activities.MainActivity
+import com.androstays.happyplaces.database.DatabaseHandler
 import com.androstays.happyplaces.databinding.ItemHappyPlaceBinding
 import com.androstays.happyplaces.model.HappyPlacesModel
 
@@ -65,10 +66,19 @@ open class HappyPlacesAdapter(
 
     }
 
-    fun notifyEditItem(activity: Activity, position: Int, requestCode: Int){
+    fun notifyEditItem(activity: Activity, position: Int, requestCode: Int) {
         val intent = Intent(context, AddHappyPlacesActivity::class.java)
         intent.putExtra(MainActivity.EXTRA_PLACE_DETAILS, list[position])
         activity.startActivityForResult(intent, requestCode)
         notifyItemChanged(position)
+    }
+
+    fun removeAt(position: Int) {
+        val dbHandler = DatabaseHandler(context)
+        val isDeleted = dbHandler.deleteHappyPlace(list[position])
+        if (isDeleted > 0) {
+            list.removeAt(position)
+            notifyItemRemoved(position)
+        }
     }
 }

@@ -75,7 +75,15 @@ class DatabaseHandler(context: Context) :
         contentValues.put(KEY_LATITUDE, happyPlace.latitude)
         contentValues.put(KEY_LONGITUDE, happyPlace.longitude)
 
-        val success = db.update(TABLE_HAPPY_PLACE, null, KEY_ID + "=" + happyPlace.id, null)
+        val success =
+            db.update(TABLE_HAPPY_PLACE, contentValues, KEY_ID + "=" + happyPlace.id, null)
+        db.close()
+        return success
+    }
+
+    fun deleteHappyPlace(happyPlace: HappyPlacesModel): Int {
+        val db = this.writableDatabase
+        val success = db.delete(TABLE_HAPPY_PLACE, KEY_ID + "=" + happyPlace.id, null)
         db.close()
         return success
     }
@@ -86,27 +94,33 @@ class DatabaseHandler(context: Context) :
         val selectQuery = "select * from $TABLE_HAPPY_PLACE"
         val db = this.readableDatabase
         try {
-            val cursor : Cursor = db.rawQuery(selectQuery, null)
-            if(cursor.moveToFirst()){
+            val cursor: Cursor = db.rawQuery(selectQuery, null)
+            if (cursor.moveToFirst()) {
                 do {
                     val place = HappyPlacesModel(
                         cursor.getInt(cursor.getColumnIndex(KEY_ID)),
-                    cursor.getString(cursor.getColumnIndex(KEY_TITLE)),
-                    cursor.getString(cursor.getColumnIndex(KEY_IMAGE)),
-                    cursor.getString(cursor.getColumnIndex(KEY_DESCRIPTION)),
-                    cursor.getString(cursor.getColumnIndex(KEY_DATE)),
-                    cursor.getString(cursor.getColumnIndex(KEY_LOCATION)),
-                    cursor.getDouble(cursor.getColumnIndex(KEY_LATITUDE)),
-                    cursor.getDouble(cursor.getColumnIndex(KEY_LONGITUDE))
-                        )
+                        cursor.getString(cursor.getColumnIndex(KEY_TITLE)),
+                        cursor.getString(cursor.getColumnIndex(KEY_IMAGE)),
+                        cursor.getString(cursor.getColumnIndex(KEY_DESCRIPTION)),
+                        cursor.getString(cursor.getColumnIndex(KEY_DATE)),
+                        cursor.getString(cursor.getColumnIndex(KEY_LOCATION)),
+                        cursor.getDouble(cursor.getColumnIndex(KEY_LATITUDE)),
+                        cursor.getDouble(cursor.getColumnIndex(KEY_LONGITUDE))
+                    )
                     happyPlacesList.add(place)
                     println(place.title)
-                }while (cursor.moveToNext())
+                } while (cursor.moveToNext())
             }
             cursor.close()
         } catch (e: SQLiteException) {
             return ArrayList()
         }
-        return happyPlacesList.reversed() as ArrayList<HappyPlacesModel>
+
+        return if (happyPlacesList.size < 1) {
+            happyPlacesList
+        }else{
+            ArrayList(happyPlacesList.reversed())
+        }
+
     }
 }
